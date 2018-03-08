@@ -4,14 +4,15 @@ import G0 from './scenes/Game/G0';
 
 const config = {
   type: Phaser.AUTO,
-  width: 500,
-  height: 500,
+  width: 800,
+  height: 800,
   title: 'Game',
   url: 'http://yourgame.com',
   banner: {
     hidePhaser: true
   },
-  scene: [BootScene, G0]
+  // scene: [BootScene, G0]
+  scene: [G0]
 };
 
 class AppGame extends Phaser.Game {
