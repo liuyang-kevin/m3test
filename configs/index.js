@@ -9,7 +9,7 @@ const global = {
 
 const local = Object.assign({}, global, {
   clientProtocol: 'http',
-  clientDomain: 'localhost',
+  clientDomain: '192.168.10.233',
   clientPort: '3000',
   develop: 1
 });

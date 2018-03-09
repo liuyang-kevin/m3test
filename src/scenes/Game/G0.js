@@ -1,19 +1,34 @@
 import Phaser from 'phaser';
 import imgOrbs from './../../assets/sprites/orbs.png';
+import { M3CONFIG } from './../../common';
 
 const orbSize = 100;
 const orbColors = 6;
-const fieldSize = 7;
+const fieldSize = 9;
 const gameArray = [];
 let canPick = true;
 let selectedOrb;
 let orbGroup;
 
+let IJsonLevel = {
+  tiles: [
+    [1, 1, 0, 1, 1, 0, 1],
+    [1, 1, 0, 1, 1, 0, 1],
+    [1, 1, 0, 1, 1, 0, 1],
+    [1, 1, 1, 1],
+    [1, 1, 0, 1],
+    [1, 0, 1, 0],
+    [1, 1, 0, 1, 1, 0, 1],
+    [1, 1, 0, 1, 1, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1]
+  ],
+  targetScore: 1000,
+  moves: 15
+};
+
 class G0 extends Phaser.Scene {
-  drawField;
   constructor() {
-    super({ key: 'G0' });
-    this.drawField = drawField.bind(this);
+    super({ key: 'G0', active: true });
   }
 
   preload() {
@@ -23,21 +38,8 @@ class G0 extends Phaser.Scene {
   }
 
   create() {
-    this.add.text(10, 10, 'Phaser 3 Advanced webpack boilerplate');
-    // let a = this.add.sprite(35, 50, 'orbs');
-    // let a1 = this.add.sprite(95, 50, 'orbs');
-    // let a2 = this.add.sprite(125, 50, 'orbs');
-    // let a3 = this.add.sprite(155, 50, 'orbs');
-    // let g = this.add.group();
-    // g.add(a);
-    // g.add(a1);
-    // g.add(a2);
-    // g.add(a3);
-    // console.dir(a);
-    // a.setFrame(Phaser.Math.RND.between(0, orbColors - 1));
-    // a.texture.firstFrame = Phaser.Math.RND.between(0, orbColors - 1);
-
-    this.drawField();
+    drawField.bind(this)();
+    // this.drawField();
     canPick = true;
     // this.input.on('pointerdown', function (pointer) {
     //
@@ -46,26 +48,61 @@ class G0 extends Phaser.Scene {
     // this.input.on('pointerdown', orbSelect);
     // this.sys.game.input.onDown.add(orbSelect);
     // this.input.onUp.add(orbDeselect);
+    // this.input.on(
+    //   'pointerdown',
+    //   pointer => {
+    //     console.log('f');
+    //   },
+    //   this
+    // );
+
+    // console.dir(this);
+  }
+
+  initChessBoard(numColumns = fieldSize, numRows = fieldSize, numCookieTypes = orbColors) {
+    console.dir(this);
+    this.children.removeAll();
+    let md = drawField.bind(this);
+    md(numColumns, numRows, numCookieTypes, IJsonLevel);
+  }
+
+  loadLevelJson(json = {}) {
+    console.log(json);
   }
 }
 
-function drawField() {
+function drawField(numColumns = fieldSize, numRows = fieldSize, numTypes = orbColors, level = {}) {
+  let padding = M3CONFIG.padding;
+  let blockSize = (this.sys.game.config.width - (M3CONFIG.padding << 1)) / fieldSize;
+  let ratio = blockSize / orbSize;
   orbGroup = this.add.group();
-  for (let i = 0; i < fieldSize; i++) {
+  for (let i = 0; i < numRows; i++) {
     gameArray[i] = [];
-    for (let j = 0; j < fieldSize; j++) {
-      let orb = this.add.sprite(orbSize * j + orbSize / 2, orbSize * i + orbSize / 2, 'orbs');
-      // console.dir(orb);
-      // orb.anchor.set(0.5);
-      orbGroup.add(orb);
-      do {
-        let randomColor = Phaser.Math.RND.between(0, orbColors - 1);
-        orb.setFrame(randomColor);
+    for (let j = 0; j < numColumns; j++) {
+      if (level.tiles && level.tiles[i] && level.tiles[i][j]) {
+        let orb = this.add.sprite(
+          blockSize * j + (blockSize >> 1) + padding,
+          blockSize * i + (blockSize >> 1) + padding,
+          'orbs'
+        );
+        orb.setScale(ratio, ratio);
+        // console.dir(orb);
+        // orb.anchor.set(0.5);
+        orbGroup.add(orb);
+        do {
+          let randomColor = Phaser.Math.RND.between(0, orbColors - 1);
+          orb.setFrame(randomColor);
+          gameArray[i][j] = {
+            orbColor: randomColor,
+            orbSprite: orb
+          };
+        } while (isMatch(i, j));
+      } else {
         gameArray[i][j] = {
-          orbColor: randomColor,
-          orbSprite: orb
+          orbColor: -1,
+          orbSprite: null
         };
-      } while (isMatch(i, j));
+      }
     }
   }
   selectedOrb = null;
@@ -83,10 +120,10 @@ function isHorizontalMatch(row, col) {
   return c === c_1 && c === c_2;
 }
 
-function isVerticalMatch(row, col){
+function isVerticalMatch(row, col) {
   let c = gemAt(row, col).orbColor;
   let c_1 = gemAt(row - 1, col).orbColor;
-  let c_2 = gemAt(row -2 , col).orbColor;
+  let c_2 = gemAt(row - 2, col).orbColor;
   return c === c_1 && c === c_2;
 }
 
