@@ -27,6 +27,7 @@ let IJsonLevel = {
 };
 
 class G0 extends Phaser.Scene {
+  static possibleSwaps = [];
   constructor() {
     super({ key: 'G0', active: true });
   }
@@ -87,10 +88,8 @@ class G0 extends Phaser.Scene {
   }
 
   detectPossibleSwaps() {
-    var possibleSwaps: Swap[] = [];
-
-    for (var row = 0; row < this.config.numRows; row++) {
-      for (var column = 0; column < this.config.numColumns; column++) {
+    for (let row = 0; row < this.config.numRows; row++) {
+      for (let column = 0; column < this.config.numColumns; column++) {
 
         var cookie = this.cookies[column][row];
         if (cookie) {
@@ -147,6 +146,19 @@ class G0 extends Phaser.Scene {
 
     this.possibleSwaps = possibleSwaps;
   }
+
+  // shuffle() {
+  //   let set = Cookie[];
+  //
+  //   do {
+  //     set = this.createInitialCookies();
+  //     this.detectPossibleSwaps();
+  //   } while (this.possibleSwaps.length == 0)
+  //
+  //   console.log(this.possibleSwaps);
+  //
+  //   return set;
+  // }
 }
 
 function drawField(numColumns = fieldSize, numRows = fieldSize, numTypes = orbColors, level = {}) {

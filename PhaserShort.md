@@ -92,6 +92,7 @@ this.anims.create({
 									zeroPad: 4 
 								}), 
 	repeat: -1 
+	
 });
 
 	
@@ -104,6 +105,13 @@ sprite.anims.pause();
 sprite.anims.restart();
 
 sprite.frame.cutX
+```
+
+
+```javascript
+var tree = Phaser.Structs.RTree();
+
+
 ```
 
 
