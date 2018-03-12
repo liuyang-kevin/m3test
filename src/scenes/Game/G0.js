@@ -12,7 +12,7 @@ let orbGroup;
 
 let IJsonLevel = {
   tiles: [
-    [1, 1, 0, 1, 1, 0, 1],
+    [1, 1, 0, 1, 1, 0, 1, 1, 1, 1],
     [1, 1, 0, 1, 1, 0, 1],
     [1, 1, 0, 1, 1, 0, 1],
     [1, 1, 1, 1],
@@ -38,7 +38,7 @@ class G0 extends Phaser.Scene {
   }
 
   create() {
-    drawField.bind(this)();
+    drawField.bind(this)(fieldSize, fieldSize, orbColors, IJsonLevel);
     // this.drawField();
     canPick = true;
     // this.input.on('pointerdown', function (pointer) {
@@ -68,6 +68,84 @@ class G0 extends Phaser.Scene {
 
   loadLevelJson(json = {}) {
     console.log(json);
+  }
+
+  tileAtColumn(column, row) {
+    return gameArray[row][column];
+  }
+
+  isPossibleSwap(other) {
+    // for (let i = 0; i < this.possibleSwaps.length; i++) {
+    //   var possibleSwap = this.possibleSwaps[i];
+    //
+    //   var isPossible = (this.isTwoCookiesEquals(other.cookieA, possibleSwap.cookieA) && this.isTwoCookiesEquals(other.cookieB, possibleSwap.cookieB)) ||
+    //     (this.isTwoCookiesEquals(other.cookieB, possibleSwap.cookieA) && this.isTwoCookiesEquals(other.cookieA, possibleSwap.cookieB));
+    //
+    //   if (isPossible) return true;
+    // }
+    return false;
+  }
+
+  detectPossibleSwaps() {
+    var possibleSwaps: Swap[] = [];
+
+    for (var row = 0; row < this.config.numRows; row++) {
+      for (var column = 0; column < this.config.numColumns; column++) {
+
+        var cookie = this.cookies[column][row];
+        if (cookie) {
+
+          // Is it possible to swap this cookie with the one on the right?
+          if (column < this.config.numColumns - 1) {
+            // Have a cookie in this spot? If there is no tile, there is no cookie.
+            var other = this.cookies[column + 1][row];
+            if (other) {
+              // Swap them
+              this.cookies[column][row] = other;
+              this.cookies[column + 1][row] = cookie;
+
+              // Is either cookie now part of a chain?
+              if (this.hasChainAtColumn(column + 1, row) ||
+                this.hasChainAtColumn(column, row)) {
+
+                var swap = new Swap();
+                swap.cookieA = cookie;
+                swap.cookieB = other;
+                possibleSwaps.push(swap);
+              }
+
+              // Swap them back
+              this.cookies[column][row] = cookie;
+              this.cookies[column + 1][row] = other;
+            }
+          }
+
+          if (row < this.config.numRows - 1) {
+
+            var other = this.cookies[column][row + 1];
+            if (other) {
+              // Swap them
+              this.cookies[column][row] = other;
+              this.cookies[column][row + 1] = cookie;
+
+              if (this.hasChainAtColumn(column, row + 1) ||
+                this.hasChainAtColumn(column, row)) {
+
+                var swap = new Swap();
+                swap.cookieA = cookie;
+                swap.cookieB = other;
+                possibleSwaps.push(swap);
+              }
+
+              this.cookies[column][row] = cookie;
+              this.cookies[column][row + 1] = other;
+            }
+          }
+        }
+      }
+    }
+
+    this.possibleSwaps = possibleSwaps;
   }
 }
 
