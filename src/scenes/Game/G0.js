@@ -1,33 +1,38 @@
 import Phaser from 'phaser';
 import imgOrbs from './../../assets/sprites/orbs.png';
 import { M3CONFIG } from './../../common';
+import { Swap, Gem } from './../../data/Swap';
 
 const orbSize = 100;
-const orbColors = 6;
-const fieldSize = 9;
-const gameArray = [];
 let canPick = true;
 let selectedOrb;
-let orbGroup;
 
-let IJsonLevel = {
+const defaultGemTypes = 6;
+const defaultFieldSize = 9;
+const defaultLevel = {
   tiles: [
-    [1, 1, 0, 1, 1, 0, 1, 1, 1, 1],
-    [1, 1, 0, 1, 1, 0, 1],
-    [1, 1, 0, 1, 1, 0, 1],
-    [1, 1, 1, 1],
-    [1, 1, 0, 1],
-    [1, 0, 1, 0],
-    [1, 1, 0, 1, 1, 0, 1],
-    [1, 1, 0, 1, 1, 0, 1],
-    [1, 0, 1, 1, 1, 0, 1]
+    [1, 0, 1, 1, 1, 1, 1, 1, 0],
+    [1, 1, 1, 1, 0, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1]
   ],
   targetScore: 1000,
   moves: 15
 };
 
 class G0 extends Phaser.Scene {
-  static possibleSwaps = [];
+  numColumns;
+  numRows;
+  numGemTypes;
+  level;
+  spriteGroup;
+  gemMap;
+  possibleSwaps = [];
   constructor() {
     super({ key: 'G0', active: true });
   }
@@ -39,8 +44,8 @@ class G0 extends Phaser.Scene {
   }
 
   create() {
-    drawField.bind(this)(fieldSize, fieldSize, orbColors, IJsonLevel);
-    // this.drawField();
+    this.initChessBoard();
+    this.detectPossibleSwaps();
     canPick = true;
     // this.input.on('pointerdown', function (pointer) {
     //
@@ -58,13 +63,92 @@ class G0 extends Phaser.Scene {
     // );
 
     // console.dir(this);
+    // console.log(this.gemMap);
+    console.log(this.possibleSwaps);
   }
 
-  initChessBoard(numColumns = fieldSize, numRows = fieldSize, numCookieTypes = orbColors) {
-    console.dir(this);
+  initChessBoard(
+    numColumns = defaultFieldSize,
+    numRows = defaultFieldSize,
+    numGemTypes = defaultGemTypes,
+    level = defaultLevel
+  ) {
+    // init data structure
+    // console.dir(this);
+    this.numGemTypes = numGemTypes;
+    this.numRows = numRows;
+    this.numColumns = numColumns;
+    this.level = level;
+    this.gemMap = [];
+    // recreate sprite
     this.children.removeAll();
-    let md = drawField.bind(this);
-    md(numColumns, numRows, numCookieTypes, IJsonLevel);
+    this.drawField(numColumns, numRows, numGemTypes, level);
+  }
+
+  drawField(numColumns, numRows, numTypes, level) {
+    let padding = M3CONFIG.padding;
+    let blockSize = (this.sys.game.config.width - (M3CONFIG.padding << 1)) / numColumns;
+    let ratio = blockSize / orbSize;
+    this.spriteGroup = this.add.group();
+    for (let i = 0; i < numColumns; i++) {
+      this.gemMap[i] = [];
+      for (let j = 0; j < numRows; j++) {
+        if (level.tiles && level.tiles[i] && level.tiles[i][j]) {
+          let sprite = this.add.sprite(
+            blockSize * j + (blockSize >> 1) + padding,
+            blockSize * i + (blockSize >> 1) + padding,
+            'orbs'
+          );
+          sprite.setScale(ratio, ratio);
+          this.spriteGroup.add(sprite);
+          do {
+            let randomColor = Phaser.Math.RND.between(0, this.numGemTypes - 1);
+            sprite.setFrame(randomColor);
+            this.gemMap[i][j] = new Gem(j, i, randomColor, sprite);
+          } while (this.hasChainAtColumn(i, j));
+          // this.hasChainAtColumn(i, j)
+          // this.isMatch(i, j)
+        } else {
+          // this.gemMap[i][j] = new Gem(i, j, -1);
+        }
+      }
+    }
+    selectedOrb = null;
+  }
+
+  isMatch(row, col) {
+    return this.isHorizontalMatch(row, col) || this.isVerticalMatch(row, col);
+  }
+
+  isHorizontalMatch(row, col) {
+    let c = this.gemColorAt(row, col);
+    let c_1 = this.gemColorAt(row, col - 1);
+    let c_2 = this.gemColorAt(row, col - 2);
+    return c === c_1 && c === c_2;
+  }
+
+  isVerticalMatch(row, col) {
+    let c = this.gemColorAt(row, col);
+    let c_1 = this.gemColorAt(row - 1, col);
+    let c_2 = this.gemColorAt(row - 2, col);
+    return c === c_1 && c === c_2;
+  }
+
+  gemAt(row, col) {
+    if (row < 0 || row >= this.numRows || col < 0 || col >= this.numColumns) {
+      return -1;
+    }
+    return this.gemMap[row][col];
+  }
+
+  gemColorAt(row, col) {
+    if (row < 0 || row >= this.numRows || col < 0 || col >= this.numColumns) {
+      return -1;
+    }
+    if (this.gemMap[row][col]) {
+      return this.gemMap[row][col].gemType;
+    }
+    return -1;
   }
 
   loadLevelJson(json = {}) {
@@ -88,56 +172,46 @@ class G0 extends Phaser.Scene {
   }
 
   detectPossibleSwaps() {
-    for (let row = 0; row < this.config.numRows; row++) {
-      for (let column = 0; column < this.config.numColumns; column++) {
-
-        var cookie = this.cookies[column][row];
-        if (cookie) {
-
+    let possibleSwaps = [];
+    for (let row = 0; row < this.numRows; row++) {
+      for (let column = 0; column < this.numColumns; column++) {
+        let gemA = this.gemMap[column][row];
+        if (gemA) {
           // Is it possible to swap this cookie with the one on the right?
-          if (column < this.config.numColumns - 1) {
+          if (column < this.numColumns - 1) {
             // Have a cookie in this spot? If there is no tile, there is no cookie.
-            var other = this.cookies[column + 1][row];
-            if (other) {
+            let gemB = this.gemMap[column + 1][row];
+            if (gemB) {
               // Swap them
-              this.cookies[column][row] = other;
-              this.cookies[column + 1][row] = cookie;
+              this.gemMap[column][row] = gemB;
+              this.gemMap[column + 1][row] = gemA;
 
               // Is either cookie now part of a chain?
-              if (this.hasChainAtColumn(column + 1, row) ||
-                this.hasChainAtColumn(column, row)) {
-
-                var swap = new Swap();
-                swap.cookieA = cookie;
-                swap.cookieB = other;
+              if (this.hasChainAtColumn(column + 1, row) || this.hasChainAtColumn(column, row)) {
+                let swap = new Swap(gemA, gemB);
                 possibleSwaps.push(swap);
               }
 
               // Swap them back
-              this.cookies[column][row] = cookie;
-              this.cookies[column + 1][row] = other;
+              this.gemMap[column][row] = gemA;
+              this.gemMap[column + 1][row] = gemB;
             }
           }
 
-          if (row < this.config.numRows - 1) {
-
-            var other = this.cookies[column][row + 1];
-            if (other) {
+          if (row < this.numRows - 1) {
+            let gemB = this.gemMap[column][row + 1];
+            if (gemB) {
               // Swap them
-              this.cookies[column][row] = other;
-              this.cookies[column][row + 1] = cookie;
+              this.gemMap[column][row] = gemB;
+              this.gemMap[column][row + 1] = gemA;
 
-              if (this.hasChainAtColumn(column, row + 1) ||
-                this.hasChainAtColumn(column, row)) {
-
-                var swap = new Swap();
-                swap.cookieA = cookie;
-                swap.cookieB = other;
+              if (this.hasChainAtColumn(column, row + 1) || this.hasChainAtColumn(column, row)) {
+                let swap = new Swap(gemA, gemB);
                 possibleSwaps.push(swap);
               }
 
-              this.cookies[column][row] = cookie;
-              this.cookies[column][row + 1] = other;
+              this.gemMap[column][row] = gemA;
+              this.gemMap[column][row + 1] = gemB;
             }
           }
         }
@@ -159,69 +233,50 @@ class G0 extends Phaser.Scene {
   //
   //   return set;
   // }
-}
-
-function drawField(numColumns = fieldSize, numRows = fieldSize, numTypes = orbColors, level = {}) {
-  let padding = M3CONFIG.padding;
-  let blockSize = (this.sys.game.config.width - (M3CONFIG.padding << 1)) / fieldSize;
-  let ratio = blockSize / orbSize;
-  orbGroup = this.add.group();
-  for (let i = 0; i < numRows; i++) {
-    gameArray[i] = [];
-    for (let j = 0; j < numColumns; j++) {
-      if (level.tiles && level.tiles[i] && level.tiles[i][j]) {
-        let orb = this.add.sprite(
-          blockSize * j + (blockSize >> 1) + padding,
-          blockSize * i + (blockSize >> 1) + padding,
-          'orbs'
-        );
-        orb.setScale(ratio, ratio);
-        // console.dir(orb);
-        // orb.anchor.set(0.5);
-        orbGroup.add(orb);
-        do {
-          let randomColor = Phaser.Math.RND.between(0, orbColors - 1);
-          orb.setFrame(randomColor);
-          gameArray[i][j] = {
-            orbColor: randomColor,
-            orbSprite: orb
-          };
-        } while (isMatch(i, j));
-      } else {
-        gameArray[i][j] = {
-          orbColor: -1,
-          orbSprite: null
-        };
-      }
+  /*
+  * 横向左右查找 符合 +1
+  * or
+  * 竖向上下查找 符合 +1
+  * 判断链子长度即可
+  * */
+  hasChainAtColumn(column, row) {
+    let gemType;
+    let gem = this.gemMap[column][row];
+    if (gem) {
+      gemType = gem.gemType;
+    } else {
+      gemType = -1;
     }
+
+    let horzLength = 1;
+    for (
+      let i = column - 1;
+      i >= 0 && this.gemMap[i][row] && this.gemMap[i][row].gemType === gemType;
+      i--, horzLength++
+    ) {}
+    for (
+      let i = column + 1;
+      i < this.numColumns &&
+      this.gemMap[i] &&
+      this.gemMap[i][row] &&
+      this.gemMap[i][row].gemType === gemType;
+      i++, horzLength++
+    ) {}
+    if (horzLength >= 3) return true;
+
+    let vertLength = 1;
+    for (
+      let i = row - 1;
+      i >= 0 && this.gemMap[column][i] && this.gemMap[column][i].gemType === gemType;
+      i--, vertLength++
+    ) {}
+    for (
+      let i = row + 1;
+      i < this.numRows && this.gemMap[column][i] && this.gemMap[column][i].gemType === gemType;
+      i++, vertLength++
+    ) {}
+    return vertLength >= 3;
   }
-  selectedOrb = null;
-}
-
-function isMatch(row, col) {
-  // return true;
-  return isHorizontalMatch(row, col) || isVerticalMatch(row, col);
-}
-
-function isHorizontalMatch(row, col) {
-  let c = gemAt(row, col).orbColor;
-  let c_1 = gemAt(row, col - 1).orbColor;
-  let c_2 = gemAt(row, col - 2).orbColor;
-  return c === c_1 && c === c_2;
-}
-
-function isVerticalMatch(row, col) {
-  let c = gemAt(row, col).orbColor;
-  let c_1 = gemAt(row - 1, col).orbColor;
-  let c_2 = gemAt(row - 2, col).orbColor;
-  return c === c_1 && c === c_2;
-}
-
-function gemAt(row, col) {
-  if (row < 0 || row >= fieldSize || col < 0 || col >= fieldSize) {
-    return -1;
-  }
-  return gameArray[row][col];
 }
 
 function orbSelect(e) {

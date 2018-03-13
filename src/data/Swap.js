@@ -7,17 +7,18 @@ const highlightedSpriteNames = [
   'Macaroon-Highlighted',
   'SugarCookie-Highlighted'
 ];
-class Gem extends Object {
+export class Gem extends Object {
   column;
   row;
   gemType;
   sprite;
 
-  constructor(column, row, gemType) {
+  constructor(column, row, gemType, sprite) {
     super();
     this.column = column;
     this.row = row;
     this.gemType = gemType;
+    this.sprite = sprite;
   }
 
   spriteName() {
@@ -28,12 +29,14 @@ class Gem extends Object {
   }
 }
 
-class Swap extends Object {
+export class Swap extends Object {
   gemA;
   gemB;
   constructor(gemA, gemB) {
     super();
+    this.gemA = gemA;
+    this.gemB = gemB;
   }
 }
 
-export default Swap;
+// export default Swap;
