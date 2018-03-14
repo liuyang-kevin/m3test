@@ -1,3 +1,5 @@
+export const emptySpace = -1;
+export const noGem = -2;
 const spriteNames = ['Croissant', 'Cupcake', 'Danish', 'Donut', 'Macaroon', 'SugarCookie'];
 const highlightedSpriteNames = [
   'Croissant-Highlighted',

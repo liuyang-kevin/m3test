@@ -1,11 +1,9 @@
 import Phaser from 'phaser';
 import imgOrbs from './../../assets/sprites/orbs.png';
 import { M3CONFIG } from './../../common';
-import { Swap, Gem } from './../../data/Swap';
+import { Swap, Gem, emptySpace, noGem } from './../../data/Swap';
 
 const orbSize = 100;
-let canPick = true;
-let selectedOrb;
 
 const defaultGemTypes = 6;
 const defaultFieldSize = 9;
@@ -33,6 +31,10 @@ class G0 extends Phaser.Scene {
   spriteGroup;
   gemMap;
   possibleSwaps = [];
+  isPossibleSwap;
+  swipeFromColumn;
+  swipeFromRow;
+  userInteractionEnabled;
   constructor() {
     super({ key: 'G0', active: true });
   }
@@ -46,7 +48,6 @@ class G0 extends Phaser.Scene {
   create() {
     this.initChessBoard();
     this.detectPossibleSwaps();
-    canPick = true;
     // this.input.on('pointerdown', function (pointer) {
     //
     // }, this);
@@ -62,6 +63,22 @@ class G0 extends Phaser.Scene {
     //   this
     // );
 
+    this.input.on(
+      'pointerdown',
+      (pointer, b, c, d, e, f, g) => {
+        console.log('dddd');
+        console.log(pointer.gameObject);
+      },
+      this
+    );
+    // this.input.events.on(
+    //   'pointerup',
+    //   (pointer, sprite) => {
+    //     console.log('uuuu');
+    //     console.log(sprite);
+    //   },
+    //   this
+    // );
     // console.dir(this);
     // console.log(this.gemMap);
     console.log(this.possibleSwaps);
@@ -83,6 +100,38 @@ class G0 extends Phaser.Scene {
     // recreate sprite
     this.children.removeAll();
     this.drawField(numColumns, numRows, numGemTypes, level);
+    // init operative
+    this.swipeFromColumn = null;
+    this.swipeFromRow = null;
+    this.isPossibleSwap = true;
+
+    console.log('add touches to sprites');
+    this.gemMap.forEach(col => {
+      col.forEach(gem => {
+        // console.log(gem);
+        gem.sprite.setInteractive();
+        // gem.sprite.on(
+        //   'pointerdown',
+        //   (pointer, b, c, d, e, f, g) => {
+        //     console.log('dddd');
+        //     console.log(pointer.gameObject);
+        //   },
+        //   this
+        // );
+        // gem.sprite.on(
+        //   'pointerup',
+        //   pointer => {
+        //     console.log('uuuu');
+        //   },
+        //   this
+        // );
+        // createdCookie.inputEnabled = true;
+        // createdCookie.events.onInputDown.add(this.touchesBegan, this);
+        // createdCookie.events.onInputUp.add(this.touchesEnd, this);
+        // cookie.sprite = createdCookie;
+      });
+    });
+    console.log('======================');
   }
 
   drawField(numColumns, numRows, numTypes, level) {
@@ -104,51 +153,30 @@ class G0 extends Phaser.Scene {
           do {
             let randomColor = Phaser.Math.RND.between(0, this.numGemTypes - 1);
             sprite.setFrame(randomColor);
-            this.gemMap[i][j] = new Gem(j, i, randomColor, sprite);
+            this.gemMap[i][j] = new Gem(i, j, randomColor, sprite);
           } while (this.hasChainAtColumn(i, j));
-          // this.hasChainAtColumn(i, j)
-          // this.isMatch(i, j)
         } else {
           // this.gemMap[i][j] = new Gem(i, j, -1);
         }
       }
     }
-    selectedOrb = null;
   }
 
-  isMatch(row, col) {
-    return this.isHorizontalMatch(row, col) || this.isVerticalMatch(row, col);
-  }
-
-  isHorizontalMatch(row, col) {
-    let c = this.gemColorAt(row, col);
-    let c_1 = this.gemColorAt(row, col - 1);
-    let c_2 = this.gemColorAt(row, col - 2);
-    return c === c_1 && c === c_2;
-  }
-
-  isVerticalMatch(row, col) {
-    let c = this.gemColorAt(row, col);
-    let c_1 = this.gemColorAt(row - 1, col);
-    let c_2 = this.gemColorAt(row - 2, col);
-    return c === c_1 && c === c_2;
-  }
-
-  gemAt(row, col) {
+  gemAt(col, row) {
     if (row < 0 || row >= this.numRows || col < 0 || col >= this.numColumns) {
       return -1;
     }
-    return this.gemMap[row][col];
+    return this.gemMap[col][row];
   }
 
-  gemColorAt(row, col) {
+  gemColorAt(col, row) {
     if (row < 0 || row >= this.numRows || col < 0 || col >= this.numColumns) {
-      return -1;
+      return emptySpace;
     }
-    if (this.gemMap[row][col]) {
-      return this.gemMap[row][col].gemType;
+    if (this.gemMap[col][row]) {
+      return this.gemMap[col][row].gemType;
     }
-    return -1;
+    return emptySpace;
   }
 
   loadLevelJson(json = {}) {
@@ -157,18 +185,6 @@ class G0 extends Phaser.Scene {
 
   tileAtColumn(column, row) {
     return gameArray[row][column];
-  }
-
-  isPossibleSwap(other) {
-    // for (let i = 0; i < this.possibleSwaps.length; i++) {
-    //   var possibleSwap = this.possibleSwaps[i];
-    //
-    //   var isPossible = (this.isTwoCookiesEquals(other.cookieA, possibleSwap.cookieA) && this.isTwoCookiesEquals(other.cookieB, possibleSwap.cookieB)) ||
-    //     (this.isTwoCookiesEquals(other.cookieB, possibleSwap.cookieA) && this.isTwoCookiesEquals(other.cookieA, possibleSwap.cookieB));
-    //
-    //   if (isPossible) return true;
-    // }
-    return false;
   }
 
   detectPossibleSwaps() {
@@ -221,18 +237,48 @@ class G0 extends Phaser.Scene {
     this.possibleSwaps = possibleSwaps;
   }
 
-  // shuffle() {
-  //   let set = Cookie[];
-  //
-  //   do {
-  //     set = this.createInitialCookies();
-  //     this.detectPossibleSwaps();
-  //   } while (this.possibleSwaps.length == 0)
-  //
-  //   console.log(this.possibleSwaps);
-  //
-  //   return set;
-  // }
+  shuffle() {
+    let gemMap = [];
+    do {
+      gemMap = this.shuffleGems();
+      this.detectPossibleSwaps();
+    } while (this.possibleSwaps.length === 0);
+    // console.log(this.possibleSwaps);
+    this.gemMap = gemMap;
+  }
+
+  shuffleGems() {
+    let gemMap = [];
+    for (let column = 0; column < this.numColumns; column++) {
+      for (let row = 0; row < this.numRows; row++) {
+        let gem = this.gemAt(column, row);
+        if (gem) {
+          // 本位置有💎， 随机一个合法位置，看看有没有
+          console.log('-------');
+          let randomGem;
+          do {
+            let randomC = Phaser.Math.RND.between(0, this.numColumns - 1);
+            let randomR = Phaser.Math.RND.between(0, this.numRows - 1);
+            randomGem = this.gemAt(randomC, randomR);
+            // console.log(gem);
+            console.log(randomGem);
+            console.log(`rc:${randomC} | rr:${randomR}`)
+          } while (!randomGem);
+        } else {
+        }
+
+        // if (this.gemMap[column][row] != null) {
+        //   var cookie: Cookie = this.createCookieAtColumn(column, row, cookieType);
+        //   array.push(cookie);
+        // } else {
+        //   this.cookies[column][row] = null;
+        // }
+      }
+    }
+
+    return gemMap;
+  }
+
   /*
   * 横向左右查找 符合 +1
   * or
@@ -277,40 +323,35 @@ class G0 extends Phaser.Scene {
     ) {}
     return vertLength >= 3;
   }
-}
 
-function orbSelect(e) {
-  console.log('orbSelect');
-  // if (canPick) {
-  //   var row = Math.floor(e.clientY / orbSize);
-  //   var col = Math.floor(e.clientX / orbSize);
-  //   var pickedOrb = gemAt(row, col)
-  //   if (pickedOrb != -1) {
-  //     if (selectedOrb == null) {
-  //       pickedOrb.orbSprite.scale.setTo(1.2);
-  //       pickedOrb.orbSprite.bringToTop();
-  //       selectedOrb = pickedOrb;
-  //       game.input.addMoveCallback(orbMove);
-  //     } else {
-  //       if (areTheSame(pickedOrb, selectedOrb)) {
-  //         selectedOrb.orbSprite.scale.setTo(1);
-  //         selectedOrb = null;
-  //       }
-  //       else {
-  //         if (areNext(pickedOrb, selectedOrb)) {
-  //           selectedOrb.orbSprite.scale.setTo(1);
-  //           swapOrbs(selectedOrb, pickedOrb, true);
-  //         }
-  //         else {
-  //           selectedOrb.orbSprite.scale.setTo(1);
-  //           pickedOrb.orbSprite.scale.setTo(1.2);
-  //           selectedOrb = pickedOrb;
-  //           game.input.addMoveCallback(orbMove);
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+  touchesEnd(selectedGem, pointer) {
+    this.swipeFromColumn = this.swipeFromRow = null;
+    //console.log('releaseCookie', selectedCookie);
+    //console.log('up from', selectedGem);
+    //console.log('touchesEnd pointer', pointer.position);
+    if (this.isPossibleSwap) {
+      this.handleMatches();
+    }
+    this.userInteractionEnabled = true;
+  }
+
+  touchesBegan(selectedGem, pointer) {
+    let gemPosition = {
+      column: null,
+      row: null
+    };
+    if (this.convertPoint(selectedGem.position, gemPosition)) {
+      if (this.level.cookieAtPosition(gemPosition.column, gemPosition.row)) {
+        this.swipeFromColumn = gemPosition.column;
+        this.swipeFromRow = gemPosition.row;
+      }
+
+      console.log('selectedCookie', 'column: ' + gemPosition.column + ' row: ' + gemPosition.row);
+    } else {
+      this.swipeFromColumn = null;
+      this.swipeFromRow = null;
+    }
+  }
 }
 
 export default G0;

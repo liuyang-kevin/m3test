@@ -29,6 +29,13 @@ class GLog extends Phaser.Scene {
         this.scene.manager.keys['G0'].initChessBoard(9, 9, 6);
       }
     });
+
+    let btnTest2 = this.add.image(100, H - 100, 'down').setInteractive();
+    btnTest2.on('pointerdown', pointer => {
+      if (this.scene.manager.keys['G0']) {
+        this.scene.manager.keys['G0'].shuffleGems();
+      }
+    });
   }
 }
 
