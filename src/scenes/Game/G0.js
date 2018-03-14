@@ -46,6 +46,10 @@ class G0 extends Phaser.Scene {
   }
 
   create() {
+    // let sprite = new Gem(0, 0, 0, this, 400, 100, 'orbs');
+    // this.sys.displayList.add(sprite);
+    // this.sys.updateList.add(sprite);
+    // console.dir(sprite);
     this.initChessBoard();
     this.detectPossibleSwaps();
     // this.input.on('pointerdown', function (pointer) {
@@ -63,14 +67,26 @@ class G0 extends Phaser.Scene {
     //   this
     // );
 
-    this.input.on(
-      'pointerdown',
-      (pointer, b, c, d, e, f, g) => {
-        console.log('dddd');
-        console.log(pointer.gameObject);
-      },
-      this
-    );
+    this.input.topOnly = true;
+    // this.input.on('pointerdown', this.touchesBegan, this);
+    this.input.on('gameobjectdown', (pointer, gameObject) => {
+      gameObject.setTint(0xff0000);
+    });
+
+    this.input.on('gameobjectup', (pointer, gameObject) => {
+      gameObject.clearTint();
+    });
+
+    this.input.on('gameobjectmove', (pointer, gameObject) => {
+      gameObject.setTint(Math.random() * 16000000);
+    });
+    // this.input.setDraggable(this.gemMap[0][0]);
+    // this.input.on('DRAG_EVENT', event => {
+    //   console.log(event);
+    //   event.gameObject.x = event.pointer.x - event.input.dragX;
+    //   event.gameObject.y = event.pointer.y - event.input.dragY;
+    // });
+
     // this.input.events.on(
     //   'pointerup',
     //   (pointer, sprite) => {
@@ -109,7 +125,7 @@ class G0 extends Phaser.Scene {
     this.gemMap.forEach(col => {
       col.forEach(gem => {
         // console.log(gem);
-        gem.sprite.setInteractive();
+        gem.setInteractive();
         // gem.sprite.on(
         //   'pointerdown',
         //   (pointer, b, c, d, e, f, g) => {
@@ -143,18 +159,26 @@ class G0 extends Phaser.Scene {
       this.gemMap[i] = [];
       for (let j = 0; j < numRows; j++) {
         if (level.tiles && level.tiles[i] && level.tiles[i][j]) {
-          let sprite = this.add.sprite(
+          let sprite = new Gem(
+            i,
+            j,
+            noGem,
+            this,
             blockSize * j + (blockSize >> 1) + padding,
             blockSize * i + (blockSize >> 1) + padding,
             'orbs'
           );
           sprite.setScale(ratio, ratio);
           this.spriteGroup.add(sprite);
+          this.gemMap[i][j] = sprite;
           do {
-            let randomColor = Phaser.Math.RND.between(0, this.numGemTypes - 1);
-            sprite.setFrame(randomColor);
-            this.gemMap[i][j] = new Gem(i, j, randomColor, sprite);
+            let randomType = Phaser.Math.RND.between(0, this.numGemTypes - 1);
+            sprite.setFrame(randomType);
+            sprite.gemType = randomType;
           } while (this.hasChainAtColumn(i, j));
+
+          this.sys.displayList.add(sprite);
+          this.sys.updateList.add(sprite);
         } else {
           // this.gemMap[i][j] = new Gem(i, j, -1);
         }
@@ -335,18 +359,13 @@ class G0 extends Phaser.Scene {
     this.userInteractionEnabled = true;
   }
 
-  touchesBegan(selectedGem, pointer) {
-    let gemPosition = {
-      column: null,
-      row: null
-    };
-    if (this.convertPoint(selectedGem.position, gemPosition)) {
-      if (this.level.cookieAtPosition(gemPosition.column, gemPosition.row)) {
-        this.swipeFromColumn = gemPosition.column;
-        this.swipeFromRow = gemPosition.row;
-      }
-
-      console.log('selectedCookie', 'column: ' + gemPosition.column + ' row: ' + gemPosition.row);
+  touchesBegan(pointer, array) {
+    if (array && array[0]) {
+      let selectedGem = array[0];
+      // console.log(selectedGem);
+      this.swipeFromColumn = selectedGem.column;
+      this.swipeFromRow = selectedGem.row;
+      console.log('selectedCookie', 'column: ' + selectedGem.column + ' row: ' + selectedGem.row);
     } else {
       this.swipeFromColumn = null;
       this.swipeFromRow = null;

@@ -1,3 +1,5 @@
+import Phaser from 'phaser';
+
 export const emptySpace = -1;
 export const noGem = -2;
 const spriteNames = ['Croissant', 'Cupcake', 'Danish', 'Donut', 'Macaroon', 'SugarCookie'];
@@ -9,18 +11,17 @@ const highlightedSpriteNames = [
   'Macaroon-Highlighted',
   'SugarCookie-Highlighted'
 ];
-export class Gem extends Object {
+export class Gem extends Phaser.GameObjects.Sprite {
   column;
   row;
   gemType;
-  sprite;
 
-  constructor(column, row, gemType, sprite) {
-    super();
+  constructor(column, row, gemType, ...config) {
+    // console.log(config);
+    super(...config);
     this.column = column;
     this.row = row;
     this.gemType = gemType;
-    this.sprite = sprite;
   }
 
   spriteName() {
